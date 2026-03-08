@@ -6,6 +6,7 @@
 <title>Editor de Fotos — FARMAMIA</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -211,6 +212,60 @@ body {
   .drop-zone div:first-child { font-size: 24px; }
   #results-grid { grid-template-columns: 1fr 1fr !important; }
 }
+
+/* SweetAlert2 custom dark theme */
+.swal2-popup {
+  background: #141C2E !important;
+  border: 1px solid #1E2D45 !important;
+  border-radius: 14px !important;
+  font-family: 'Barlow', sans-serif !important;
+  color: #E0EAF4 !important;
+}
+.swal2-title {
+  font-family: 'Barlow Condensed', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 20px !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: #E0EAF4 !important;
+}
+.swal2-html-container {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  color: #8899AA !important;
+}
+.swal2-confirm {
+  background: linear-gradient(135deg, #00E5FF, #00B8CC) !important;
+  color: #0A0F1E !important;
+  font-family: 'Barlow Condensed', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  border-radius: 8px !important;
+  padding: 10px 28px !important;
+  border: none !important;
+  box-shadow: 0 0 16px rgba(0,229,255,.2) !important;
+}
+.swal2-confirm:hover { filter: brightness(1.1) !important; }
+.swal2-icon.swal2-warning {
+  border-color: #FFB800 !important;
+  color: #FFB800 !important;
+}
+.swal2-icon.swal2-error {
+  border-color: #FF5555 !important;
+  color: #FF5555 !important;
+}
+.swal2-icon.swal2-success {
+  border-color: #00E5FF !important;
+  color: #00E5FF !important;
+}
+.swal2-icon.swal2-success [class^=swal2-success-line] {
+  background-color: #00E5FF !important;
+}
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgba(0,229,255,.3) !important;
+}
 </style>
 </head>
 <body>
@@ -229,7 +284,7 @@ body {
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span id="status-dot" style="width:7px;height:7px;border-radius:50%;background:#1E2D45;display:block;flex-shrink:0"></span>
-      <span id="status-text" style="font-family:'JetBrains Mono';font-size:10px;color:#f9f9f9">LISTO</span>
+      <span id="status-text" style="font-family:'JetBrains Mono';font-size:10px;color:#1E2D45">LISTO</span>
     </div>
   </div>
 </header>
@@ -618,9 +673,15 @@ async function saveResult(result) {
 
 async function processImages() {
   if (processing) return;
-  if (!files.length)  { alert('Agrega al menos una imagen.'); return; }
+  if (!files.length) {
+    Swal.fire({ title: 'Sin imágenes', html: 'Agrega al menos una imagen antes de continuar.', icon: 'warning', confirmButtonText: 'ENTENDIDO' });
+    return;
+  }
   const code=document.getElementById('prod-code').value.trim();
-  if (!code) { alert('Ingresa el código del producto.'); return; }
+  if (!code) {
+    Swal.fire({ title: 'Código requerido', html: 'Ingresa el código del producto antes de continuar.', icon: 'warning', confirmButtonText: 'ENTENDIDO' });
+    return;
+  }
   const prKey=document.getElementById('pr-key').value.trim();
   const gmKey=document.getElementById('gm-key').value.trim();
 
