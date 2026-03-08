@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor de Fotos — FARMAMIA</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: #0A0F1E;
+  background-image: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(0,229,255,0.07) 0%, transparent 60%);
+  min-height: 100vh;
+  color: #E0EAF4;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #070C18; }
+::-webkit-scrollbar-thumb { background: #1E2D45; border-radius: 3px; }
+
+.card {
+  background: #141C2E;
+  border: 1px solid #1E2D45;
+  border-radius: 12px;
+  transition: border-color .2s;
+}
+.card-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid #1E2D45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #00E5FF;
+}
+.card-body { padding: 16px 20px; }
+
+.field {
+  background: #070C18;
+  border: 1px solid #1E2D45;
+  border-radius: 8px;
+  color: #E0EAF4;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 10px 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color .2s, box-shadow .2s;
+}
+.field:focus { border-color: rgba(0,229,255,.4); box-shadow: 0 0 0 3px rgba(0,229,255,.07); }
+.field::placeholder { color: #1E2D45; }
+
+.lbl {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  color: #8899AA;
+  display: block;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.btn-cyan {
+  background: linear-gradient(135deg, #00E5FF, #00B8CC);
+  color: #0A0F1E;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 15px 24px;
+  width: 100%;
+  transition: filter .2s, box-shadow .2s, transform .1s;
+}
+.btn-cyan:hover { filter: brightness(1.1); box-shadow: 0 0 24px rgba(0,229,255,.25); }
+.btn-cyan:active { transform: scale(.98); }
+.btn-cyan:disabled { opacity: .35; cursor: not-allowed; filter: none; box-shadow: none; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #1E2D45;
+  color: #8899AA;
+  font-family: 'Barlow', sans-serif;
+  font-size: 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  padding: 7px 13px;
+  transition: border-color .2s, color .2s;
+}
+.btn-ghost:hover { border-color: rgba(0,229,255,.3); color: #00E5FF; }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(0,229,255,.3);
+  color: #00E5FF;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border-radius: 7px;
+  cursor: pointer;
+  padding: 8px 14px;
+  transition: background .2s, box-shadow .2s;
+}
+.btn-outline:hover { background: rgba(0,229,255,.08); box-shadow: 0 0 12px rgba(0,229,255,.15); }
+
+.drop-zone {
+  border: 2px dashed #1E2D45;
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: rgba(0,229,255,.5);
+  background: rgba(0,229,255,.03);
+}
+
+@keyframes scan {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.prog-bar {
+  background: linear-gradient(90deg, #007A8A 0%, #00E5FF 50%, #007A8A 100%);
+  background-size: 800px 100%;
+  animation: scan 1.8s infinite linear;
+  height: 100%;
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+
+.log-area {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  background: #070C18;
+  padding: 14px 18px;
+  height: 190px;
+  overflow-y: auto;
+  border-radius: 0 0 11px 11px;
+}
+
+.checker {
+  background-image:
+    linear-gradient(45deg,#182030 25%,transparent 25%),
+    linear-gradient(-45deg,#182030 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#182030 75%),
+    linear-gradient(-45deg,transparent 75%,#182030 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+  background-color: #0D1525;
+}
+
+.result-card {
+  background: #0D1525;
+  border: 1px solid #1E2D45;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.result-card:hover { border-color: rgba(0,229,255,.25); }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.a1{animation:fadeIn .45s ease both}
+.a2{animation:fadeIn .45s .08s ease both}
+.a3{animation:fadeIn .45s .16s ease both}
+.a4{animation:fadeIn .45s .24s ease both}
+.a5{animation:fadeIn .45s .32s ease both}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.pulsing{animation:pulse 1.2s infinite}
+
+.divline { border:none; border-top:1px solid #1E2D45; }
+
+/* ── RESPONSIVE ─────────────────────────────────────── */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 680px) {
+  .responsive-grid { grid-template-columns: 1fr; }
+  header > div { flex-direction: column; gap: 8px; align-items: flex-start !important; }
+  main { padding: 14px; gap: 12px; }
+  .card-body { padding: 14px 16px; }
+  .card-head { padding: 12px 16px; }
+  #apis-body > div:nth-child(2),
+  #apis-body > div:nth-child(3) { flex-direction: column; gap: 6px; }
+  #apis-body > div:nth-child(2) span,
+  #apis-body > div:nth-child(3) span { min-width: unset !important; }
+  .btn-cyan { font-size: 13px; padding: 13px; }
+  #results-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important; gap: 10px !important; }
+}
+@media (max-width: 480px) {
+  .drop-zone { padding: 20px 14px; }
+  .drop-zone div:first-child { font-size: 24px; }
+  #results-grid { grid-template-columns: 1fr 1fr !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="a1" style="border-bottom:1px solid #1E2D45">
+  <div style="height:2px;background:linear-gradient(90deg,transparent 0%,#00E5FF 50%,transparent 100%)"></div>
+  <div style="max-width:900px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div>
+        <span style="font-family:'Barlow Condensed';font-weight:700;font-size:24px;letter-spacing:.04em;color:#E0EAF4">EDITOR DE FOTOS</span>
+      </div>
+      <div style="font-family:'Barlow Condensed';font-size:11px;color:#1E2D45;letter-spacing:.1em;margin-top:2px">
+        LIENZO 729×720 &nbsp;/&nbsp; REGLAS 10%–90% &nbsp;/&nbsp; PHOTOROOM + GEMINI 2.0
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="status-dot" style="width:7px;height:7px;border-radius:50%;background:#1E2D45;display:block;flex-shrink:0"></span>
+      <span id="status-text" style="font-family:'JetBrains Mono';font-size:10px;color:#1E2D45">LISTO</span>
+    </div>
+  </div>
+</header>
+
+<main style="max-width:900px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:16px">
+
+  <!-- APIS -->
+  <section class="card a2">
+    <div class="card-head">
+      <span class="card-label">Configuración de APIs</span>
+      <button onclick="toggleApis()" id="apis-toggle" class="btn-ghost" style="padding:4px 10px;font-size:10px;letter-spacing:.08em">OCULTAR ▲</button>
+    </div>
+    <div id="apis-body" class="card-body" style="display:flex;flex-direction:column;gap:12px">
+      <div style="background:#070C18;border:1px solid #1E2D45;border-left:2px solid #00E5FF;border-radius:8px;padding:10px 14px;font-size:11px;color:#8899AA;line-height:1.9">
+        <span style="color:#00E5FF;font-weight:600">PhotoRoom</span> — elimina el fondo de cualquier imagen &nbsp;(1 000 gratis / mes)<br>
+        <span style="color:#00E5FF;font-weight:600">Gemini 2.0</span> — mejora fotos de celular a calidad de estudio profesional
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Barlow Condensed';font-size:12px;font-weight:600;color:#00E5FF;letter-spacing:.08em;min-width:88px">PHOTOROOM</span>
+        <div style="position:relative;flex:1">
+          <input id="pr-key" type="password" placeholder="sk_pr_live_..." class="field" style="padding-right:42px" oninput="saveKeys()">
+          <button onclick="toggleVis('pr-key',this)" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:#2A3D5A;cursor:pointer;font-size:15px;line-height:1">👁</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Barlow Condensed';font-size:12px;font-weight:600;color:#00E5FF;letter-spacing:.08em;min-width:88px">GEMINI</span>
+        <div style="position:relative;flex:1">
+          <input id="gm-key" type="password" placeholder="AlzaSy..." class="field" style="padding-right:42px" oninput="saveKeys()">
+          <button onclick="toggleVis('gm-key',this)" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:#2A3D5A;cursor:pointer;font-size:15px;line-height:1">👁</button>
+        </div>
+      </div>
+      <p style="font-family:'JetBrains Mono';font-size:10px;color:#1E2D45;padding-left:100px">🔒 Claves guardadas solo en tu navegador</p>
+    </div>
+  </section>
+
+  <!-- IMAGEN + CONFIGURACION -->
+  <div class="a3 responsive-grid">
+
+    <!-- Imágenes -->
+    <section class="card">
+      <div class="card-head"><span class="card-label">Imágenes a procesar</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+        <div id="drop-zone" class="drop-zone"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="handleDragOver(event)" ondragleave="handleDragLeave()" ondrop="handleDrop(event)">
+          <div style="font-size:30px;margin-bottom:8px">📂</div>
+          <p style="font-size:13px;color:#8899AA">Arrastra o <span style="color:#00E5FF;text-decoration:underline">haz clic</span> para seleccionar</p>
+          <p style="font-size:11px;color:#2A3D5A;margin-top:4px">JPG · PNG · WEBP · múltiples archivos</p>
+          <input id="file-input" type="file" multiple accept="image/*" style="display:none" onchange="handleFiles(this.files)">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('file-input').click()" class="btn-outline" style="flex:1">+ Agregar</button>
+          <button onclick="clearFiles()" class="btn-ghost">Limpiar</button>
+        </div>
+        <div id="file-list-wrap" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span id="file-count" style="font-family:'JetBrains Mono';font-size:10px;color:#8899AA">0 archivos</span>
+          </div>
+          <div id="file-list" style="max-height:130px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Código + Salida -->
+    <section class="card">
+      <div class="card-head"><span class="card-label">Código y Salida</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:16px">
+
+        <div>
+          <label class="lbl">Código de producto</label>
+          <input id="prod-code" type="text" placeholder="ej: 76111" class="field" oninput="updateOutputPreview()">
+        </div>
+
+        <div>
+          <label class="lbl">Nombre del archivo</label>
+          <div id="output-preview" style="background:#070C18;border:1px solid #1E2D45;border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono';font-size:12px;color:#00E5FF">
+            76111_FOTO.png
+          </div>
+        </div>
+
+        <div>
+          <label class="lbl">Carpeta de destino</label>
+          <!-- Chrome/Edge: folder picker -->
+          <div id="folder-picker-wrap" style="display:none;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;align-items:stretch">
+              <div id="folder-display" style="flex:1;background:#070C18;border:1px solid #1E2D45;border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#2A3D5A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                Selecciona una carpeta...
+              </div>
+              <button onclick="pickFolder()" class="btn-outline" style="white-space:nowrap;flex-shrink:0">📁 Elegir</button>
+            </div>
+            <p id="folder-note" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#1E2D45">Sin carpeta: los archivos van a Descargas</p>
+          </div>
+          <!-- Firefox: info note -->
+          <div id="folder-firefox-note" style="display:none;background:#070C18;border:1px solid #1E2D45;border-left:2px solid rgba(0,229,255,.25);border-radius:8px;padding:12px 14px">
+            <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8899AA;margin-bottom:5px">📥 Los archivos se guardan en <span style="color:#00E5FF">Descargas</span></p>
+            <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#2A3D5A;line-height:1.7">Para elegir carpeta: Configuración → Descargas → <span style="color:#8899AA">"Preguntar siempre dónde guardar"</span></p>
+          </div>
+        </div>
+    </section>
+  </div>
+
+  <!-- PROCESAR -->
+  <div class="a4" style="display:flex;flex-direction:column;gap:10px">
+    <button id="proc-btn" onclick="processImages()" class="btn-cyan">
+      ▶ &nbsp; PROCESAR IMÁGENES
+    </button>
+    <div id="progress-wrap" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span id="prog-label" style="font-family:'JetBrains Mono';font-size:10px;color:#8899AA">Procesando...</span>
+        <span id="prog-pct" style="font-family:'JetBrains Mono';font-size:10px;color:#00E5FF">0%</span>
+      </div>
+      <div style="background:#111827;border-radius:4px;height:5px;overflow:hidden">
+        <div id="prog-bar" class="prog-bar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTADOS -->
+  <section id="results-section" class="card" style="display:none">
+    <div class="card-head">
+      <span class="card-label">Resultados</span>
+      <button onclick="downloadAll()" id="dl-all-btn" class="btn-outline" style="display:none;font-size:11px">⬇ Descargar todos</button>
+    </div>
+    <div id="results-grid" style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px"></div>
+  </section>
+
+  <!-- LOG -->
+  <section class="card a5">
+    <div class="card-head">
+      <span class="card-label">Registro de Actividad</span>
+      <button onclick="clearLog()" class="btn-ghost" style="padding:4px 10px;font-size:10px">LIMPIAR</button>
+    </div>
+    <div id="log-area" class="log-area"></div>
+  </section>
+
+</main>
+
+<footer style="border-top:1px solid #1E2D45;padding:14px 24px;text-align:center;margin-top:8px">
+  <span style="font-family:'Barlow Condensed';font-size:10px;color:#1E2D45;letter-spacing:.12em">
+    FARMAMIA CIA LTDA &nbsp;•&nbsp; EDITOR AUTOMÁTICO DE FOTOS &nbsp;•&nbsp; v2.1
+  </span>
+</footer>
+
+<script>
+let files = [], results = [], processing = false, outputDirHandle = null;
+
+window.onload = () => {
+  document.getElementById('pr-key').value = localStorage.getItem('pr_key') || '';
+  document.getElementById('gm-key').value = localStorage.getItem('gm_key') || '';
+
+  // Detect browser folder picker support
+  if (window.showDirectoryPicker) {
+    // Chrome / Edge
+    document.getElementById('folder-picker-wrap').style.display = 'flex';
+    // Restore saved folder name if any
+    const savedFolder = localStorage.getItem('folder_name');
+    if (savedFolder) {
+      document.getElementById('folder-display').textContent = '✓ ' + savedFolder;
+      document.getElementById('folder-display').style.color = '#00E5FF';
+      document.getElementById('folder-note').textContent = 'Carpeta: ' + savedFolder;
+      document.getElementById('folder-note').style.color = 'rgba(0,229,255,.5)';
+    }
+    log('Chrome/Edge detectado → selector de carpeta disponible.', 'info');
+  } else {
+    // Firefox / Safari
+    document.getElementById('folder-firefox-note').style.display = 'block';
+    log('Firefox detectado → archivos se guardarán en Descargas.', 'info');
+  }
+
+  log('Sistema listo. Agrega imágenes para comenzar.', 'info');
+};
+
+function saveKeys() {
+  localStorage.setItem('pr_key', document.getElementById('pr-key').value);
+  localStorage.setItem('gm_key', document.getElementById('gm-key').value);
+}
+function toggleVis(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+function toggleApis() {
+  const b = document.getElementById('apis-body'), t = document.getElementById('apis-toggle');
+  const hidden = b.style.display === 'none';
+  b.style.display = hidden ? 'flex' : 'none';
+  if (hidden) b.style.flexDirection = 'column';
+  t.textContent = hidden ? 'OCULTAR ▲' : 'MOSTRAR ▼';
+}
+
+async function pickFolder() {
+  try {
+    outputDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const fd = document.getElementById('folder-display');
+    fd.textContent = '✓ ' + outputDirHandle.name;
+    fd.style.color = '#00E5FF';
+    document.getElementById('folder-note').textContent = 'Carpeta: ' + outputDirHandle.name;
+    document.getElementById('folder-note').style.color = 'rgba(0,229,255,.5)';
+    localStorage.setItem('folder_name', outputDirHandle.name);
+    log('Carpeta de salida: ' + outputDirHandle.name, 'success');
+  } catch(e) { if (e.name !== 'AbortError') log('Error: ' + e.message, 'error'); }
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function handleDragLeave()  { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function handleDrop(e)      { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over'); handleFiles(e.dataTransfer.files); }
+
+function handleFiles(newFiles) {
+  for (const f of newFiles) if (!files.find(x => x.name === f.name)) files.push(f);
+  renderFileList(); updateOutputPreview();
+}
+function renderFileList() {
+  const wrap = document.getElementById('file-list-wrap');
+  if (!files.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  document.getElementById('file-count').textContent = `${files.length} archivo${files.length>1?'s':''}`;
+  document.getElementById('file-list').innerHTML = files.map((f,i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0A0F1E;border:1px solid #1E2D45;border-radius:6px">
+      <span style="font-family:'JetBrains Mono';font-size:10px;color:#2A3D5A;min-width:14px;text-align:right">${i+1}</span>
+      <span style="font-family:'JetBrains Mono';font-size:10px;color:#8899AA;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <span style="font-size:10px;color:#2A3D5A">${(f.size/1024).toFixed(0)}KB</span>
+      <button onclick="removeFile(${i})" style="background:none;border:none;color:#2A3D5A;cursor:pointer;font-size:12px" onmouseover="this.style.color='#ff5555'" onmouseout="this.style.color='#2A3D5A'">✕</button>
+    </div>`).join('');
+}
+function removeFile(i) { files.splice(i,1); renderFileList(); updateOutputPreview(); }
+function clearFiles()   { files=[]; renderFileList(); updateOutputPreview(); }
+function updateOutputPreview() {
+  const code = document.getElementById('prod-code').value.trim() || 'CODIGO';
+  document.getElementById('output-preview').textContent = `${code}${files.length>1?'_01':''}_FOTO.png`;
+}
+
+function log(msg, type='info') {
+  const colors = { info:'#8899AA', success:'#00E5FF', error:'#FF5555', warn:'#FFB800', proc:'#AA88FF' };
+  const t = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const div = document.createElement('div');
+  div.style.color = colors[type]||colors.info;
+  div.innerHTML = `<span style="color:#1E2D45">[${t}]</span> ${msg}`;
+  const area = document.getElementById('log-area');
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+function clearLog() { document.getElementById('log-area').innerHTML=''; }
+
+function setStatus(txt, active=false) {
+  document.getElementById('status-text').textContent = txt.toUpperCase();
+  document.getElementById('status-text').style.color = active ? '#00E5FF' : '#1E2D45';
+  const dot = document.getElementById('status-dot');
+  dot.style.background = active ? '#00E5FF' : '#1E2D45';
+  dot.className = active ? 'pulsing' : '';
+}
+function setProgress(pct, label) {
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('prog-bar').style.width = pct+'%';
+  document.getElementById('prog-pct').textContent = Math.round(pct)+'%';
+  if (label) document.getElementById('prog-label').textContent = label;
+}
+
+function fileToBase64(file) {
+  return new Promise(r => { const fr=new FileReader(); fr.onload=()=>r(fr.result.split(',')[1]); fr.readAsDataURL(file); });
+}
+function fileToDataURL(file) {
+  return new Promise(r => { const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(file); });
+}
+function isRealPhoto(dataURL) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const sz=120, c=document.createElement('canvas'); c.width=c.height=sz;
+      const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,sz,sz);
+      const border=[];
+      for(let x=0;x<sz;x+=5){border.push(ctx.getImageData(x,0,1,1).data);border.push(ctx.getImageData(x,sz-1,1,1).data);}
+      for(let y=0;y<sz;y+=5){border.push(ctx.getImageData(0,y,1,1).data);border.push(ctx.getImageData(sz-1,y,1,1).data);}
+      const light=border.filter(p=>p[0]>210&&p[1]>210&&p[2]>210).length;
+      resolve(light/border.length < 0.30);
+    };
+    img.src = dataURL;
+  });
+}
+
+async function photoRoomRemoveBg(file, key) {
+  const form=new FormData(); form.append('image_file', file);
+  const r=await fetch('https://sdk.photoroom.com/v1/segment',{method:'POST',headers:{'x-api-key':key},body:form});
+  if(!r.ok) throw new Error(`PhotoRoom ${r.status}: ${(await r.text()).slice(0,80)}`);
+  return await r.blob();
+}
+
+async function geminiEnhance(file, key) {
+  const b64=await fileToBase64(file);
+  const prompt="Professional product photographer: Transform this product photo into high-quality studio catalog image. STRICT RULES: 1.Keep ALL colors EXACTLY as original 2.Keep ALL text exactly as-is 3.Pure white background 4.Perfect frontal lighting. Return ONLY the enhanced product image.";
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${key}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:file.type||'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}})
+  });
+  if(!r.ok) throw new Error(`Gemini ${r.status}`);
+  const data=await r.json();
+  for(const p of(data.candidates?.[0]?.content?.parts||[])){
+    if(p.inlineData?.mimeType?.startsWith('image/')){
+      const bin=atob(p.inlineData.data), bytes=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+      return new Blob([bytes],{type:p.inlineData.mimeType});
+    }
+  }
+  throw new Error('Gemini no devolvió imagen');
+}
+
+function cleanAlpha(blob) {
+  return new Promise(resolve => {
+    const img=new Image(), url=URL.createObjectURL(blob);
+    img.onload=()=>{
+      const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+      const ctx=c.getContext('2d'); ctx.drawImage(img,0,0);
+      const d=ctx.getImageData(0,0,c.width,c.height);
+      for(let i=3;i<d.data.length;i+=4) if(d.data[i]<128){d.data[i-3]=0;d.data[i-2]=0;d.data[i-1]=0;d.data[i]=0;}
+      ctx.putImageData(d,0,0); URL.revokeObjectURL(url);
+      c.toBlob(b=>resolve(b),'image/png');
+    };
+    img.src=url;
+  });
+}
+
+function getBbox(img) {
+  const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+  const ctx=c.getContext('2d'); ctx.drawImage(img,0,0);
+  const d=ctx.getImageData(0,0,img.width,img.height).data, w=img.width, h=img.height;
+  let minX=w,minY=h,maxX=0,maxY=0;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(d[(y*w+x)*4+3]>128){
+    if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
+  }
+  return maxX>minX&&maxY>minY ? {x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1} : null;
+}
+
+function placeOnCanvas(blob) {
+  return new Promise(resolve => {
+    const img=new Image(), url=URL.createObjectURL(blob);
+    img.onload=()=>{
+      const CW=729,CH=720,gT=72,gB=648,gL=72,gR=656,aW=gR-gL,aH=gB-gT;
+      const bb=getBbox(img);
+      const sX=bb?bb.x:0,sY=bb?bb.y:0,sW=bb?bb.w:img.width,sH=bb?bb.h:img.height;
+      const scale=Math.min(aW/sW,aH/sH,1.0);
+      const nW=Math.max(1,Math.round(sW*scale)),nH=Math.max(1,Math.round(sH*scale));
+      const pX=gL+Math.round((aW-nW)/2),pY=gT+Math.round((aH-nH)/2);
+      const c=document.createElement('canvas'); c.width=CW; c.height=CH;
+      const ctx=c.getContext('2d'); ctx.clearRect(0,0,CW,CH);
+      ctx.drawImage(img,sX,sY,sW,sH,pX,pY,nW,nH);
+      URL.revokeObjectURL(url);
+      c.toBlob(b=>resolve({blob:b,nW,nH,scale}),'image/png');
+    };
+    img.src=url;
+  });
+}
+
+async function processSingle(file, code, prKey, gmKey, pfx) {
+  log(`${pfx} Cargando (${(file.size/1024).toFixed(0)}KB)...`, 'proc');
+  const real = await isRealPhoto(await fileToDataURL(file));
+  let work = file;
+
+  if (gmKey && real) {
+    log(`${pfx} Foto real → Gemini 2.0...`, 'proc');
+    try { const e=await geminiEnhance(work,gmKey); work=new File([e],file.name,{type:e.type}); log(`${pfx} Gemini ✓`,'success'); }
+    catch(e){ log(`${pfx} Gemini falló: ${e.message}`,'warn'); }
+  } else { log(`${pfx} Catálogo detectado → Gemini omitido`,'info'); }
+
+  if (prKey) {
+    log(`${pfx} PhotoRoom eliminando fondo...`,'proc');
+    try { const nb=await photoRoomRemoveBg(work,prKey); work=new File([nb],file.name.replace(/\.[^.]+$/,'.png'),{type:'image/png'}); log(`${pfx} PhotoRoom ✓`,'success'); }
+    catch(e){ log(`${pfx} PhotoRoom falló: ${e.message}`,'error'); }
+  } else { log(`${pfx} Sin clave PhotoRoom`,'warn'); }
+
+  log(`${pfx} Limpiando transparencias...`,'proc');
+  const cleaned = await cleanAlpha(work);
+  log(`${pfx} Componiendo lienzo 729×720...`,'proc');
+  const {blob,nW,nH,scale} = await placeOnCanvas(cleaned);
+  log(`${pfx} ${nW}×${nH}px (${(scale*100).toFixed(1)}%) ✓`,'success');
+  return { blob, name:`${code}_FOTO.png` };
+}
+
+async function saveResult(result) {
+  if (outputDirHandle) {
+    try {
+      const fh=await outputDirHandle.getFileHandle(result.name,{create:true});
+      const w=await fh.createWritable();
+      await w.write(result.blob); await w.close();
+      log(`Guardado en carpeta: ${result.name}`,'success'); return;
+    } catch(e){ log(`Error guardando en carpeta → descargando... (${e.message})`,'warn'); }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(result.blob); a.download=result.name; a.click();
+}
+
+async function processImages() {
+  if (processing) return;
+  if (!files.length)  { alert('Agrega al menos una imagen.'); return; }
+  const code=document.getElementById('prod-code').value.trim();
+  if (!code) { alert('Ingresa el código del producto.'); return; }
+  const prKey=document.getElementById('pr-key').value.trim();
+  const gmKey=document.getElementById('gm-key').value.trim();
+
+  processing=true; results=[];
+  const btn=document.getElementById('proc-btn');
+  btn.disabled=true; btn.textContent='⏳  PROCESANDO...';
+  document.getElementById('results-section').style.display='none';
+  document.getElementById('results-grid').innerHTML='';
+  document.getElementById('dl-all-btn').style.display='none';
+  setStatus('Procesando',true); setProgress(0,'Iniciando...');
+  log(`\n── Proceso: ${files.length} imagen(es) ──`,'proc');
+
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    const prodCode=files.length===1?code:`${code}_${String(i+1).padStart(2,'0')}`;
+    const pfx=`[${i+1}/${files.length}]`;
+    setProgress((i/files.length)*100,`${pfx} ${f.name}`);
+    log(`\n${pfx} ${f.name}`,'proc');
+    try {
+      const result=await processSingle(f,prodCode,prKey,gmKey,pfx);
+      results.push(result);
+      await saveResult(result);
+      addResultCard(result,results.length-1);
+    } catch(e){ log(`${pfx} ❌ ${e.message}`,'error'); }
+    setProgress(((i+1)/files.length)*100,`${pfx} completado`);
+  }
+
+  log(`\n── Finalizado: ${results.length}/${files.length} ──`,'success');
+  setProgress(100,`✓ ${results.length}/${files.length} completadas`);
+  setStatus(`${results.length} listas`,false);
+
+  if(results.length>0){
+    document.getElementById('results-section').style.display='block';
+    document.getElementById('results-section').scrollIntoView({behavior:'smooth',block:'start'});
+    if(results.length>1) document.getElementById('dl-all-btn').style.display='inline-block';
+  }
+  btn.disabled=false; btn.textContent='▶  PROCESAR IMÁGENES'; processing=false;
+}
+
+function addResultCard(result, idx) {
+  const url=URL.createObjectURL(result.blob);
+  const grid=document.getElementById('results-grid');
+  const card=document.createElement('div'); card.className='result-card';
+  card.innerHTML=`
+    <div class="checker" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:8px">
+      <img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain">
+    </div>
+    <div style="padding:10px;border-top:1px solid #1E2D45">
+      <p style="font-family:'JetBrains Mono';font-size:10px;color:#8899AA;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px">${result.name}</p>
+      <button onclick="downloadResult(${idx})" class="btn-outline" style="width:100%;text-align:center;padding:7px;font-size:11px">⬇ Descargar</button>
+    </div>`;
+  grid.appendChild(card);
+}
+
+function downloadResult(idx) {
+  const r=results[idx], a=document.createElement('a');
+  a.href=URL.createObjectURL(r.blob); a.download=r.name; a.click();
+}
+function downloadAll() { results.forEach((r,i)=>setTimeout(()=>downloadResult(i),i*300)); }
+</script>
+</body>
+</html>
